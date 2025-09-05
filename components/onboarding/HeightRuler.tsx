@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
-
+import { useTheme } from '@/hooks/useTheme';
 
 const RULER_HEIGHT = 400;
 const TICK_INTERVAL = 10; // 10px = 1 unit
@@ -25,6 +25,40 @@ interface HeightRulerProps {
 }
 
 export function HeightRuler({ onHeightChange }: HeightRulerProps) {
+    const { mode } = useTheme();
+
+    // 🎨 Theme colors
+    const colors = {
+        light: {
+            bg: '#ffffff',
+            fadeTop: ['#f3fff3', 'transparent'],
+            fadeBottom: ['transparent', '#f3fff3'],
+            textPrimary: '#111827',
+            textSecondary: '#4B5563',
+            textMuted: '#9CA3AF',
+            mainTick: '#50a762',
+            majorTick: '#7bc783',
+            minorTick: '#c9e9cb',
+            indicator: '#f97316', // orange-500
+            unitBg: '#e5f2e3',
+            unitText: '#1F2937',
+        },
+        dark: {
+            bg: '#0d1510',
+            fadeTop: ['#0d1510', 'transparent'],
+            fadeBottom: ['transparent', '#0d1510'],
+            textPrimary: '#f9fafb',
+            textSecondary: '#d1d5db',
+            textMuted: '#6b7280',
+            mainTick: '#50a762',
+            majorTick: '#7bc783',
+            minorTick: '#3a4a3a',
+            indicator: '#f97316',
+            unitBg: '#1e2a22',
+            unitText: '#f9fafb',
+        },
+    }[mode];
+
     const [unit, setUnit] = React.useState<Unit>('cm');
     const [currentValue, setCurrentValue] = React.useState(175);
     const { width: screenWidth } = useWindowDimensions();
@@ -35,8 +69,6 @@ export function HeightRuler({ onHeightChange }: HeightRulerProps) {
     const translateY = useSharedValue(0);
     const startY = useSharedValue(0);
     const rulerCenterY = RULER_HEIGHT / 2;
-
-    const contentHeight = (MAX_VALUE - MIN_VALUE) * TICK_INTERVAL; // ✅ works for ft too
 
     const prevTickIndex = React.useRef<number>(Math.round(-translateY.value / TICK_INTERVAL));
 
@@ -49,47 +81,34 @@ export function HeightRuler({ onHeightChange }: HeightRulerProps) {
         return arr;
     }, [MIN_VALUE, MAX_VALUE, unit]);
 
-    const maxTranslateY = 0; // MIN_VALUE at center
-    const minTranslateY = -(ticks.length - 1) * TICK_INTERVAL; // MAX_VALUE at center
+    const maxTranslateY = 0;
+    const minTranslateY = -(ticks.length - 1) * TICK_INTERVAL;
 
+    const getOffsetForValue = (value: number) => -(value - MIN_VALUE) * TICK_INTERVAL;
 
-    // ✅ Map value to offset
-    const getOffsetForValue = (value: number) => {
-        return -(value - MIN_VALUE) * TICK_INTERVAL;
-    };
-
-    // ✅ Map offset back to value
     const updateCurrentValue = (translateYVal: number) => {
         const tickIndex = Math.round(-translateYVal / TICK_INTERVAL);
-    
+
         if (tickIndex !== prevTickIndex.current) {
-            // Light haptic feedback
             Haptics.selectionAsync();
             prevTickIndex.current = tickIndex;
         }
-    
+
         let value = MIN_VALUE + tickIndex;
         if (unit === 'ft') value = Math.round((MIN_VALUE + tickIndex * 0.1) * 10) / 10;
-    
+
         const clampedValue = Math.max(MIN_VALUE, Math.min(MAX_VALUE, value));
         setCurrentValue(clampedValue);
         onHeightChange(clampedValue, unit);
     };
 
-
-    // ✅ Snap to nearest tick
     const snapToNearest = (val: number) => {
-        const snapped =
-            unit === 'cm'
-                ? Math.round(val)
-                : Math.round(val * 10) / 10;
-
+        const snapped = unit === 'cm' ? Math.round(val) : Math.round(val * 10) / 10;
         const offset = getOffsetForValue(snapped);
         translateY.value = withTiming(offset, { duration: 180 });
         runOnJS(updateCurrentValue)(offset);
     };
 
-    // ✅ Gesture control
     const panGesture = Gesture.Pan()
         .onBegin(() => {
             startY.value = translateY.value;
@@ -104,33 +123,27 @@ export function HeightRuler({ onHeightChange }: HeightRulerProps) {
             const velocity = e.velocityY / 4;
             let projected = translateY.value + velocity * 0.2;
             const clampedProjected = Math.max(minTranslateY, Math.min(maxTranslateY, projected));
-        
-            // Snap to nearest tick
+
             const tickIndex = Math.round(-clampedProjected / TICK_INTERVAL);
             const snappedOffset = -tickIndex * TICK_INTERVAL;
-        
+
             translateY.value = withTiming(snappedOffset, { duration: 200 }, () => {
                 runOnJS(updateCurrentValue)(snappedOffset);
             });
         });
-        
-
 
     const animatedRulerStyle = useAnimatedStyle(() => ({
         transform: [{ translateY: translateY.value }],
     }));
 
-    // ✅ Handle unit change & initial positioning
     useEffect(() => {
-        const initialValue = unit === 'cm' ? 175 : 5.5; // ✅ default ft = 5.5
+        const initialValue = unit === 'cm' ? 175 : 5.5;
         setCurrentValue(initialValue);
         const offset = getOffsetForValue(initialValue);
         translateY.value = offset;
         onHeightChange(initialValue, unit);
     }, [unit]);
 
-
-    // Toggle cm/ft
     const toggleUnit = () => {
         setUnit(unit === 'cm' ? 'ft' : 'cm');
     };
@@ -140,23 +153,27 @@ export function HeightRuler({ onHeightChange }: HeightRulerProps) {
             {/* Value Display */}
             <View className="flex-row items-center justify-center">
                 <View style={{ width: screenWidth / 2, alignItems: 'center' }}>
-                    <Text className="text-6xl font-extrabold text-gray-900">
+                    <Text
+                        className="text-6xl font-extrabold"
+                        style={{ color: colors.textPrimary }}
+                    >
                         {currentValue.toFixed(unit === 'ft' ? 1 : 0)}
                     </Text>
                 </View>
 
-                {/* Ruler (fixed-height viewport) */}
+                {/* Ruler */}
                 <View
                     style={{
                         height: RULER_HEIGHT,
                         width: 120,
-                        overflow: 'hidden', // ✅ important to prevent overflow
+                        overflow: 'hidden',
+                        backgroundColor: colors.bg,
                     }}
                     className="relative justify-center"
                 >
                     {/* Top Fade */}
                     <LinearGradient
-                        colors={['#f3fff3', 'transparent']}
+                        colors={colors.fadeTop}
                         className="absolute top-0 left-0 right-0 h-16 z-10"
                     />
 
@@ -188,11 +205,17 @@ export function HeightRuler({ onHeightChange }: HeightRulerProps) {
                                         style={{ height: TICK_INTERVAL }}
                                     >
                                         {isMainTick ? (
-                                            <Text className="w-10 text-xs font-bold text-gray-700">
+                                            <Text
+                                                className="w-10 text-xs font-bold"
+                                                style={{ color: colors.textPrimary }}
+                                            >
                                                 {unit === 'cm' ? Math.round(val) : val.toFixed(1)}
                                             </Text>
                                         ) : isMajorTick ? (
-                                            <Text className="w-14 text-xs text-gray-400">
+                                            <Text
+                                                className="w-14 text-xs"
+                                                style={{ color: colors.textMuted }}
+                                            >
                                                 {unit === 'cm' ? Math.round(val) : ''}
                                             </Text>
                                         ) : (
@@ -203,15 +226,18 @@ export function HeightRuler({ onHeightChange }: HeightRulerProps) {
                                             style={{
                                                 flex: 1,
                                                 backgroundColor: isMainTick
-                                                    ? '#50a762' // Dark green
+                                                    ? colors.mainTick
                                                     : isMajorTick
-                                                        ? '#7bc783' // Medium green
-                                                        : '#c9e9cb', // Light green (minor)
-                                                height: isMainTick ? 6 : isMajorTick ? 4 : 2, // ✅ different heights
+                                                    ? colors.majorTick
+                                                    : colors.minorTick,
+                                                height: isMainTick
+                                                    ? 6
+                                                    : isMajorTick
+                                                    ? 4
+                                                    : 2,
                                                 borderRadius: 999,
                                             }}
                                         />
-
                                     </View>
                                 );
                             })}
@@ -220,13 +246,16 @@ export function HeightRuler({ onHeightChange }: HeightRulerProps) {
 
                     {/* Bottom Fade */}
                     <LinearGradient
-                        colors={['transparent', '#f3fff3']}
+                        colors={colors.fadeBottom}
                         className="absolute bottom-0 left-0 right-0 h-16 z-10"
                     />
 
                     {/* Center Indicator */}
                     <View className="absolute left-0 right-0 top-1/2 -mt-[1px]">
-                        <View className="w-16 h-1 bg-orange-500 rounded-full mx-auto" />
+                        <View
+                            className="w-16 h-1 rounded-full mx-auto"
+                            style={{ backgroundColor: colors.indicator }}
+                        />
                     </View>
                 </View>
             </View>
@@ -234,9 +263,13 @@ export function HeightRuler({ onHeightChange }: HeightRulerProps) {
             {/* Unit Switch */}
             <Pressable
                 onPress={toggleUnit}
-                className="bg-[#e5f2e3] px-5 py-2 rounded-full mt-4"
+                style={{ backgroundColor: colors.unitBg }}
+                className="px-5 py-2 rounded-full mt-4"
             >
-                <Text className="text-base font-semibold text-gray-800 uppercase">
+                <Text
+                    className="text-base font-semibold uppercase"
+                    style={{ color: colors.unitText }}
+                >
                     {unit}
                 </Text>
             </Pressable>

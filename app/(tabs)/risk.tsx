@@ -3,14 +3,41 @@ import { BioSystemCard } from '@/components/risk/BioSystemCard';
 import { RiskScoreHeader } from '@/components/risk/RiskScoreHeader';
 import { useTheme } from '@/hooks/useTheme';
 import { useKpiStore } from '@/store/useKpiStore';
+import { useUserStore } from '@/store/useUserStore';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 export default function RiskScreen() {
   const { colors } = useTheme();
   const { userKpis } = useKpiStore();
+  const logout = useUserStore((state) => state.logout); // Get the logout function
+  const router = useRouter();
+
+  const handleLogout = () => {
+    // It's good practice to confirm a destructive action like logging out.
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        { 
+          text: "Sign Out", 
+          onPress: () => {
+            logout();
+            // Redirect to the very root, which will then decide where to go
+            router.replace('/(onboarding)/welcome');
+          },
+          style: 'destructive' 
+        }
+      ]
+    );
+  };
 
   // --- DERIVE REAL DATA & SCORES ---
   const riskAnalysis = useMemo(() => {
@@ -106,6 +133,19 @@ export default function RiskScreen() {
             <Ionicons name="arrow-forward-circle" size={32} color={colors.accentText} />
           </Pressable>
       </Animated.View>
+
+      <View className="mt-12 mb-6 pt-8 border-t" style={{ borderColor: colors.border }}>
+        <Pressable 
+            onPress={handleLogout} 
+            className="flex-row items-center justify-center p-3 rounded-lg" 
+            style={{ backgroundColor: colors.danger + '20' }} // Use danger color with transparency
+        >
+            <Ionicons name="log-out-outline" size={22} color={colors.danger} />
+            <Text className="text-lg font-bold ml-3" style={{ color: colors.danger }}>
+                Sign Out
+            </Text>
+        </Pressable>
+      </View>
       
     </Screen>
   );

@@ -1,8 +1,8 @@
-import React from 'react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
@@ -12,11 +12,11 @@ import { HeightRuler } from '@/components/onboarding/HeightRuler';
 
 import { useUserStore } from '@/store/useUserStore';
 import { UserProfile, Gender, ActivityLevel } from '@/types';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '@/hooks/useTheme';
 
 const TOTAL_STEPS = 4;
 
-// A custom hook to simplify managing state for lists where multiple items can be selected.
+// Multi-selection hook
 const useMultiSelection = (initialState: string[] = []) => {
   const [selectedItems, setSelectedItems] = useState<string[]>(initialState);
 
@@ -34,59 +34,75 @@ export default function UserInfoScreen() {
   const setProfile = useUserStore((state) => state.setProfile);
   const [currentStep, setCurrentStep] = useState(0);
 
+  const { mode } = useTheme();
+
+  // Light & Dark palettes
+  const lightColors = {
+    background: '#f3fff3',
+    textPrimary: '#1f2937', // gray-800
+    textSecondary: '#6b7280', // gray-500
+    stepText: '#9ca3af', // gray-400
+  };
+
+  const darkColors = {
+    background: '#0f1a12',
+    textPrimary: '#f9fafb', // gray-50
+    textSecondary: '#d1d5db', // gray-300
+    stepText: '#6b7280', // gray-500
+  };
+
+  const palette = mode === 'dark' ? darkColors : lightColors;
+
   // --- FORM STATE ---
-  // Step 1: Personal Information
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('');
 
-  // Step 2: Body Metrics
   const [height, setHeight] = useState(175);
   const [heightUnit, setHeightUnit] = useState('cm');
-  // NOTE: A similar state would be needed for a WeightRuler component
-  // const [weight, setWeight] = useState(70);
-  // const [weightUnit, setWeightUnit] = useState('kg');
 
-  // Step 3: Fitness Goals
   const [fitnessGoals, toggleFitnessGoal] = useMultiSelection();
 
-  // Step 4: Health & Diet
   const [diet, setDiet] = useState('');
   const [allergies, setAllergies] = useState('');
 
   const handleNext = () => {
-    // If not on the last step, just advance to the next one
     if (currentStep < TOTAL_STEPS - 1) {
       setCurrentStep(s => s + 1);
       return;
     }
 
-    // On the final step, compile the profile and navigate
     const profile: UserProfile = {
       name,
       age: parseInt(age, 10) || 0,
-      phone: '', // Phone number was removed from this flow
+      phone: '',
       gender: (gender as Gender) || Gender.PreferNotToSay,
-      activityLevel: ActivityLevel.ModeratelyActive, // This could be a future step
+      activityLevel: ActivityLevel.ModeratelyActive,
     };
-
-    // Here, you would also save the other collected data (height, weight, goals, diet)
-    // to a relevant Zustand store (e.g., useKpiStore, useGoalStore).
 
     setProfile(profile);
     router.push('/(onboarding)/confirmation');
   };
 
   const renderStepContent = () => {
-    // The key={currentStep} prop on Animated.View is essential.
-    // It tells React to re-mount the component when the step changes,
-    // which is what triggers the enter/exit animations.
     return (
-      <Animated.View key={currentStep} entering={FadeIn.duration(300)} exiting={FadeOut.duration(200)}>
+      <Animated.View
+        key={currentStep}
+        entering={FadeIn.duration(300)}
+        exiting={FadeOut.duration(200)}
+      >
         {currentStep === 0 && (
           <>
-            <Text className="text-3xl font-bold text-gray-800">Personal Information</Text>
-            <Text className="text-base text-gray-500 mt-2 mb-6">
+            <Text
+              className="text-3xl font-bold"
+              style={{ color: palette.textPrimary }}
+            >
+              Personal Information
+            </Text>
+            <Text
+              className="text-base mt-2 mb-6"
+              style={{ color: palette.textSecondary }}
+            >
               Let's start with the basics.
             </Text>
 
@@ -104,11 +120,12 @@ export default function UserInfoScreen() {
               placeholder="24"
             />
 
-            {/* Gender Section */}
-            <Text className="text-lg font-semibold text-gray-700 mt-6 mb-2">
+            <Text
+              className="text-lg font-semibold mt-6 mb-2"
+              style={{ color: palette.textPrimary }}
+            >
               Gender
             </Text>
-
             <StepperSelectionItem
               label="Male"
               icon="male-outline"
@@ -128,42 +145,110 @@ export default function UserInfoScreen() {
               onPress={() => setGender('PreferNotToSay')}
             />
           </>
-
         )}
 
         {currentStep === 1 && (
           <View className="items-center">
-            <Text className="text-3xl font-bold text-gray-800">Enter Your Height</Text>
-            <Text className="text-base text-gray-500 mt-2 mb-10">Your height will help us calculate your BMI.</Text>
+            <Text
+              className="text-3xl font-bold"
+              style={{ color: palette.textPrimary }}
+            >
+              Enter Your Height
+            </Text>
+            <Text
+              className="text-base mt-2 mb-10"
+              style={{ color: palette.textSecondary }}
+            >
+              Your height will help us calculate your BMI.
+            </Text>
             <HeightRuler
               onHeightChange={(h, unit) => {
                 setHeight(h);
                 setHeightUnit(unit);
               }}
             />
-            {/* A similar WeightRuler component would go here */}
           </View>
         )}
 
         {currentStep === 2 && (
           <>
-            <Text className="text-3xl font-bold text-gray-800">Fitness Goals</Text>
-            <Text className="text-base text-gray-500 mt-2 mb-6">What are you hoping to achieve? Select all that apply.</Text>
-            <StepperSelectionItem label="Lose Weight" icon="scale-outline" isSelected={fitnessGoals.includes('Lose Weight')} onPress={() => toggleFitnessGoal('Lose Weight')} />
-            <StepperSelectionItem label="Build Muscle" icon="barbell-outline" isSelected={fitnessGoals.includes('Build Muscle')} onPress={() => toggleFitnessGoal('Build Muscle')} />
-            <StepperSelectionItem label="Improve Stamina" icon="walk-outline" isSelected={fitnessGoals.includes('Improve Stamina')} onPress={() => toggleFitnessGoal('Improve Stamina')} />
-            <StepperSelectionItem label="Reduce Stress" icon="happy-outline" isSelected={fitnessGoals.includes('Reduce Stress')} onPress={() => toggleFitnessGoal('Reduce Stress')} />
+            <Text
+              className="text-3xl font-bold"
+              style={{ color: palette.textPrimary }}
+            >
+              Fitness Goals
+            </Text>
+            <Text
+              className="text-base mt-2 mb-6"
+              style={{ color: palette.textSecondary }}
+            >
+              What are you hoping to achieve? Select all that apply.
+            </Text>
+            <StepperSelectionItem
+              label="Lose Weight"
+              icon="scale-outline"
+              isSelected={fitnessGoals.includes('Lose Weight')}
+              onPress={() => toggleFitnessGoal('Lose Weight')}
+            />
+            <StepperSelectionItem
+              label="Build Muscle"
+              icon="barbell-outline"
+              isSelected={fitnessGoals.includes('Build Muscle')}
+              onPress={() => toggleFitnessGoal('Build Muscle')}
+            />
+            <StepperSelectionItem
+              label="Improve Stamina"
+              icon="walk-outline"
+              isSelected={fitnessGoals.includes('Improve Stamina')}
+              onPress={() => toggleFitnessGoal('Improve Stamina')}
+            />
+            <StepperSelectionItem
+              label="Reduce Stress"
+              icon="happy-outline"
+              isSelected={fitnessGoals.includes('Reduce Stress')}
+              onPress={() => toggleFitnessGoal('Reduce Stress')}
+            />
           </>
         )}
 
         {currentStep === 3 && (
           <>
-            <Text className="text-3xl font-bold text-gray-800">Health & Diet</Text>
-            <Text className="text-base text-gray-500 mt-2 mb-6">Any preferences or restrictions we should know about?</Text>
-            <StepperSelectionItem label="Vegetarian" icon="leaf-outline" isSelected={diet === 'Vegetarian'} onPress={() => setDiet('Vegetarian')} />
-            <StepperSelectionItem label="Vegan" icon="heart-outline" isSelected={diet === 'Vegan'} onPress={() => setDiet('Vegan')} />
-            <StepperSelectionItem label="Non-Vegetarian" icon="restaurant-outline" isSelected={diet === 'Non-Vegetarian'} onPress={() => setDiet('Non-Vegetarian')} />
-            <Input label="Allergies (optional)" value={allergies} onChangeText={setAllergies} placeholder="e.g., Peanuts, Shellfish" />
+            <Text
+              className="text-3xl font-bold"
+              style={{ color: palette.textPrimary }}
+            >
+              Health & Diet
+            </Text>
+            <Text
+              className="text-base mt-2 mb-6"
+              style={{ color: palette.textSecondary }}
+            >
+              Any preferences or restrictions we should know about?
+            </Text>
+            <StepperSelectionItem
+              label="Vegetarian"
+              icon="leaf-outline"
+              isSelected={diet === 'Vegetarian'}
+              onPress={() => setDiet('Vegetarian')}
+            />
+            <StepperSelectionItem
+              label="Vegan"
+              icon="heart-outline"
+              isSelected={diet === 'Vegan'}
+              onPress={() => setDiet('Vegan')}
+            />
+            <StepperSelectionItem
+              label="Non-Vegetarian"
+              icon="restaurant-outline"
+              isSelected={diet === 'Non-Vegetarian'}
+              onPress={() => setDiet('Non-Vegetarian')}
+            />
+            <Input
+              label="Allergies (optional)"
+              value={allergies}
+              onChangeText={setAllergies}
+              placeholder="e.g., Peanuts, Shellfish"
+            />
           </>
         )}
       </Animated.View>
@@ -171,11 +256,14 @@ export default function UserInfoScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#f3fff3]">
+    <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }}>
       {/* Header with Progress Bar */}
       <View className="px-6 pt-4">
         <StepperProgressBar totalSteps={TOTAL_STEPS} currentStep={currentStep} />
-        <Text className="text-sm font-semibold text-gray-400 mt-4 uppercase">
+        <Text
+          className="text-sm font-semibold mt-4 uppercase"
+          style={{ color: palette.stepText }}
+        >
           Step {currentStep + 1} of {TOTAL_STEPS}
         </Text>
       </View>
@@ -189,11 +277,13 @@ export default function UserInfoScreen() {
       </ScrollView>
 
       {/* Sticky Footer with Continue Button */}
-      <View className="absolute bottom-0 left-0 right-0 p-6 bg-[#f3fff3]">
+      <View
+        className="absolute bottom-0 left-0 right-0 p-6"
+        style={{ backgroundColor: palette.background }}
+      >
         <Button
           title="Continue"
           onPress={handleNext}
-          // Basic validation: Disable button on the first step if required fields are empty
           disabled={currentStep === 0 && (!name || !age || !gender)}
         />
       </View>
