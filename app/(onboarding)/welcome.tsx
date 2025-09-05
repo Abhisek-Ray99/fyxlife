@@ -1,19 +1,19 @@
 // WelcomeScreen.tsx
 import React, { useState } from 'react';
-import { Text, View, Pressable, useWindowDimensions } from 'react-native';
+import { Text, View, Pressable, useWindowDimensions, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated,
-  {
-    FadeIn,
-    FadeOut,
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-    useDerivedValue,
-    interpolate,
-    runOnJS,
-  } from 'react-native-reanimated';
+{
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  useDerivedValue,
+  interpolate,
+  runOnJS,
+} from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Button } from '@/components/common/Button';
 import { PreferenceTag } from '@/components/onboarding/PreferenceTag';
@@ -223,7 +223,7 @@ export default function WelcomeScreen() {
 
   return (
     <GestureDetector gesture={panGesture}>
-      <LinearGradient colors={[ThemeMode, ThemeBg]} className="flex-1 pt-8 pb-10 rounded-t-3xl">
+      <LinearGradient colors={[ThemeMode, ThemeBg]} style={styles.gradient}>
         {/* Header */}
         <View className="flex-row justify-between items-center px-6 pt-6">
           <Text className="text-2xl font-bold" style={{ color: textPrimary }}>
@@ -246,22 +246,10 @@ export default function WelcomeScreen() {
               containerAnimatedStyle,
             ]}
           >
-            {Array.from({ length: STEPS_DATA.length }).map((_, i) => (
-              <View
-                key={`frame-${i}`}
-                style={{
-                  position: 'absolute',
-                  left: i * screenWidth + 18,
-                  top: 10,
-                  width: screenWidth - 36,
-                  height: screenHeight * 0.63,
-                }}
-                pointerEvents="none"
-              />
-            ))}
             {renderAllTags()}
           </Animated.View>
         </View>
+
 
         {/* Footer */}
         <View className="px-6 pt-6 rounded-t-3xl">
@@ -290,3 +278,12 @@ export default function WelcomeScreen() {
     </GestureDetector>
   );
 }
+
+const styles = StyleSheet.create({
+  gradient: {
+    flex: 1, // should work on Android
+    // For iOS, sometimes you also need:
+    minHeight: '100%', 
+    paddingVertical: 20,
+  },
+});
