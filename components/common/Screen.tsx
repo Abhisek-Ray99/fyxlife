@@ -25,7 +25,7 @@ export function Screen({ children, scrollable = false, contentContainerStyle }: 
 
   return (
     // This remains transparent to allow the root background to show through
-    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+    <SafeAreaView className="flex-1"  edges={['top', 'left', 'right']} style={{ backgroundColor: colors.background }}>
       <Container
         className="flex-1"
         contentContainerStyle={finalContentContainerStyle}

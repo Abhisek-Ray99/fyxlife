@@ -1,5 +1,4 @@
 import { useTheme } from '@/hooks/useTheme';
-import { useStreakStore } from '@/store/useStreakStore';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -30,16 +29,11 @@ function Root({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
-  const { checkAndResetStreak } = useStreakStore();
   const { theme, mode, paletteName } = useTheme();
   const systemScheme = useColorScheme();
   const setMode = useThemeStore((state) => state.setMode);
 
   const [fontsLoaded] = useFonts({});
-
-  useEffect(() => {
-    checkAndResetStreak();
-  }, [checkAndResetStreak]);
 
   // 🔥 Sync system scheme with Zustand
   useEffect(() => {

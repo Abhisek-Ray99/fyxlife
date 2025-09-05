@@ -38,7 +38,10 @@ export interface Goal {
     completed: boolean;
 }
 
-export type KpiCategory = 'Cardio' | 'Metabolic' | 'Composition' | 'Mental';
+// Define a type for the health status of a KPI
+export type KpiStatus = 'good' | 'fair' | 'poor';
+
+export type KpiCategory = 'Cardio' | 'Metabolic' | 'Composition' | 'Mental' | 'Respiratory';
 
 export interface Kpi {
     label: string;
@@ -54,6 +57,7 @@ export type KpiData = {
     restingHeartRate?: Kpi[];
     sleepQuality?: Kpi[];
     dailyActivity?: Kpi[];
+    oxygenSaturation?: Kpi[];
     bmi?: Kpi[];
     waistCircumference?: Kpi[];
     cholesterol?: {
