@@ -97,7 +97,7 @@ This section provides a summary of the project's technical details, assumptions 
     *   **Gestures:** React Native Gesture Handler
     *   **Icons:** Expo Vector Icons
 
-*   **AI Tools Used:** This project was developed with assistance from a large language model (LLM) for boilerplate code generation, documentation, and iterative refinement of components. The AI served as a productivity multiplier, allowing for a primary focus on architecture, UI/UX implementation, and business logic.
+*   **AI Tools Used:** This project leveraged several AI tools to streamline development. Google AI Studio was used for component styling, while GitHub Copilot and Cursor assisted with type suggestions and debugging. Additionally, a large language model (LLM) helped with boilerplate code generation, documentation, and iterative component refinement, allowing the primary focus to remain on architecture, UI/UX design, and business logic.
 
 ### Project Structure
 
